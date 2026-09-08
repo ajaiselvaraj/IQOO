@@ -1,148 +1,90 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Loader2, Clock, AlertTriangle } from 'lucide-react';
-import { cn, formatDuration } from '@/lib/utils';
-import type { AnalysisRun } from '@/types';
+import { motion } from 'framer-motion';
+import { CheckCircle2, Loader2, Circle, Cpu } from 'lucide-react';
+import type { AnalysisRun, AnalysisStage } from '@/types';
 
 interface AgentPipelineProps {
-  run: AnalysisRun;
+  run?: AnalysisRun;
   currentStageIndex?: number;
   isLive?: boolean;
 }
 
-const STAGE_ICONS = ['📡', '🔍', '🏗️', '⚙️', '🧠', '✔️', '📊', '📝'];
-
-export function AgentPipeline({ run, currentStageIndex, isLive = false }: AgentPipelineProps) {
-  const activeIdx = currentStageIndex ?? run.stages.length - 1;
+export function AgentPipeline({ run, currentStageIndex, isLive }: AgentPipelineProps) {
+  const stages: AnalysisStage[] = run?.stages ?? [
+    { id: '1', name: 'Fetching PR Metadata', description: '', status: 'complete', durationMs: 420 },
+    { id: '2', name: 'Parsing Code Diff', description: '', status: 'complete', durationMs: 310 },
+    { id: '3', name: 'Loading Repository Context', description: '', status: 'complete', durationMs: 580 },
+    { id: '4', name: 'Static Analysis (Ruff + Semgrep)', description: '', status: 'complete', durationMs: 1240 },
+    { id: '5', name: 'LLM Reasoning Engine', description: '', status: 'complete', durationMs: 2850 },
+    { id: '6', name: 'Deduplication & Validation Filter', description: '', status: 'complete', durationMs: 640 },
+    { id: '7', name: 'Multi-Dimensional Risk Scoring', description: '', status: 'complete', durationMs: 410 },
+    { id: '8', name: 'Generating Review Summary', description: '', status: 'complete', durationMs: 320 },
+  ];
 
   return (
     <div
-      className="rounded-lg p-4"
+      className="rounded-xl p-3.5 space-y-2.5"
       style={{
         background: 'var(--color-bg-surface)',
         border: '1px solid var(--color-border)',
       }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between pb-2" style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
         <div className="flex items-center gap-2">
-          <div
-            className="w-5 h-5 rounded-md flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-          >
-            <span className="text-[10px]">◎</span>
-          </div>
-          <h3 className="text-xs font-semibold tracking-wider uppercase" style={{ color: 'var(--color-text-muted)' }}>
-            ORBITA AGENT
+          <Cpu size={15} className="text-indigo-400" />
+          <h3 className="section-title" style={{ color: 'var(--color-text-primary)' }}>
+            8-Stage AI Pipeline
           </h3>
         </div>
-        {isLive ? (
-          <div className="flex items-center gap-1.5 text-[10px]" style={{ color: 'var(--color-accent)' }}>
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] status-dot-analyzing" />
-            LIVE
-          </div>
-        ) : (
-          <span className="text-[10px] font-mono" style={{ color: 'var(--color-text-muted)' }}>
-            {run.durationMs ? formatDuration(run.durationMs) : 'Complete'}
+        {isLive && (
+          <span className="flex items-center gap-1.5 text-[10px] font-mono text-indigo-400 font-bold">
+            <Loader2 size={11} className="animate-spin" />
+            PROCESSING
           </span>
         )}
       </div>
 
-      {/* Stages */}
-      <div className="space-y-1">
-        {run.stages.map((stage, idx) => {
-          const isComplete = isLive ? idx < activeIdx : stage.status === 'complete';
-          const isRunning = isLive ? idx === activeIdx : stage.status === 'running';
-          const isPending = isLive ? idx > activeIdx : stage.status === 'pending';
+      <div className="space-y-2">
+        {stages.map((stage, idx) => {
+          const isCurrent = isLive && currentStageIndex === idx;
+          const isComplete = !isLive || (currentStageIndex !== undefined && idx < currentStageIndex);
 
           return (
-            <motion.div
-              key={stage.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.04, duration: 0.25 }}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-300',
-                isRunning && 'bg-[var(--color-accent-muted)]',
-                isPending && 'opacity-40',
-              )}
+            <div
+              key={stage.name}
+              className="flex items-center justify-between text-[12px] py-1 px-2 rounded-lg transition-colors"
               style={{
-                border: isRunning ? '1px solid var(--color-accent-border)' : '1px solid transparent',
+                background: isCurrent ? 'var(--color-accent-muted)' : 'transparent',
               }}
             >
-              {/* Status icon */}
-              <div className="w-4 h-4 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 {isComplete ? (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  >
-                    <Check size={13} style={{ color: 'var(--color-pass)' }} strokeWidth={2.5} />
-                  </motion.div>
-                ) : isRunning ? (
-                  <Loader2
-                    size={13}
-                    className="animate-spin"
-                    style={{ color: 'var(--color-accent)' }}
-                  />
+                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                ) : isCurrent ? (
+                  <Loader2 size={14} className="text-indigo-400 animate-spin shrink-0" />
                 ) : (
-                  <Clock size={12} style={{ color: 'var(--color-text-muted)' }} />
+                  <Circle size={14} className="text-slate-600 shrink-0" />
                 )}
+                <span
+                  className={`truncate font-medium ${
+                    isCurrent
+                      ? 'text-indigo-300 font-bold'
+                      : isComplete
+                      ? 'text-slate-200'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {stage.name}
+                </span>
               </div>
-
-              {/* Stage icon + name */}
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-[13px] leading-none">{STAGE_ICONS[idx]}</span>
-                <div className="min-w-0">
-                  <div
-                    className={cn(
-                      'text-xs font-medium truncate',
-                      isRunning ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'
-                    )}
-                  >
-                    {stage.name}
-                  </div>
-                  <AnimatePresence>
-                    {isRunning && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="text-[10px] mt-0.5 leading-tight truncate"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {stage.description}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Duration / timing */}
-              {isComplete && stage.durationMs && (
-                <span className="text-[10px] font-mono shrink-0" style={{ color: 'var(--color-text-muted)' }}>
-                  {formatDuration(stage.durationMs)}
+              {stage.durationMs && isComplete && (
+                <span className="font-mono text-[10px] text-slate-500 shrink-0">
+                  {stage.durationMs}ms
                 </span>
               )}
-            </motion.div>
+            </div>
           );
         })}
       </div>
-
-      {/* Summary footer */}
-      {!isLive && (
-        <div
-          className="mt-3 pt-3 flex items-center justify-between text-[10px]"
-          style={{ borderTop: '1px solid var(--color-border)' }}
-        >
-          <span style={{ color: 'var(--color-text-muted)' }}>
-            8 stages · {formatDuration(run.durationMs ?? 0)}
-          </span>
-          <span className="font-semibold" style={{ color: 'var(--color-pass)' }}>
-            Analysis complete
-          </span>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GitBranch, SplitSquareHorizontal, AlignLeft } from 'lucide-react';
+import { GitBranch, AlertTriangle, FileCode2 } from 'lucide-react';
 import { parseDiff } from '@/lib/utils';
+import { SeverityBadge } from '@/components/ui/Badge';
 import type { DiffFile, Finding } from '@/types';
 
 interface DiffViewerProps {
   files: DiffFile[];
   findings: Finding[];
+  selectedFindingId?: string;
+  onSelectFinding?: (id: string) => void;
 }
 
 const LANGUAGE_COLORS: Record<string, string> = {
@@ -47,98 +50,141 @@ function FileTab({ file, active, onClick, hasFinding }: FileTabProps) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2 text-xs whitespace-nowrap transition-all border-b-2"
+      className="flex flex-col items-start gap-1 px-4 py-3 text-[12px] transition-all border-l-[3px] font-mono w-full"
       style={{
         color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-        borderBottomColor: active ? 'var(--color-accent)' : 'transparent',
-        background: active ? 'var(--color-bg-surface)' : 'transparent',
+        borderLeftColor: active ? 'var(--color-accent)' : 'transparent',
+        background: active ? 'var(--color-bg-elevated)' : 'transparent',
       }}
     >
+      <div className="flex items-center gap-2 w-full">
       <span
-        className="font-mono text-[9px] px-1 rounded-sm"
-        style={{ background: `${statusColors[file.status]}20`, color: statusColors[file.status] }}
+        className="text-[9px] px-1 font-bold rounded uppercase"
+        style={{
+          background: `color-mix(in srgb, ${statusColors[file.status]} 15%, transparent)`,
+          color: statusColors[file.status],
+        }}
       >
         {file.status === 'added' ? 'A' : file.status === 'deleted' ? 'D' : 'M'}
       </span>
-      <span className="font-mono">{file.filename.split('/').pop()}</span>
-      <div className="flex items-center gap-1 text-[10px]">
-        <span style={{ color: 'var(--color-pass)' }}>+{file.additions}</span>
-        <span style={{ color: 'var(--color-critical)' }}>-{file.deletions}</span>
+      <span>{file.filename.split('/').pop()}</span>
       </div>
-      {hasFinding && (
-        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-critical)' }} />
-      )}
+      <div className="flex items-center justify-between w-full text-[10px]">
+        <div className="flex items-center gap-1">
+          <span style={{ color: 'var(--color-pass)' }}>+{file.additions}</span>
+          <span style={{ color: 'var(--color-critical)' }}>-{file.deletions}</span>
+        </div>
+        {hasFinding && (
+          <AlertTriangle size={11} className="text-rose-500" />
+        )}
+      </div>
     </button>
   );
 }
 
-export function DiffViewer({ files, findings }: DiffViewerProps) {
+export function DiffViewer({ files, findings, selectedFindingId, onSelectFinding }: DiffViewerProps) {
   const [activeFile, setActiveFile] = useState(files[0]?.filename ?? '');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedFinding = findings.find(f => f.id === selectedFindingId);
+
+  // Auto-switch tab if selected finding belongs to a different file
+  useEffect(() => {
+    if (selectedFinding && selectedFinding.file !== activeFile) {
+      if (files.some(f => f.filename === selectedFinding.file)) {
+        setActiveFile(selectedFinding.file);
+      }
+    }
+  }, [selectedFindingId]);
+
+  // Smooth scroll to selected line when selectedFindingId changes
+  useEffect(() => {
+    if (selectedFinding) {
+      const lineElem = document.getElementById(`diff-line-${selectedFinding.file}-${selectedFinding.line}`);
+      if (lineElem) {
+        lineElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [selectedFindingId, activeFile]);
 
   const currentFile = files.find(f => f.filename === activeFile) ?? files[0];
   const fileFindings = findings.filter(f => f.file === currentFile?.filename);
-  const findingLines = new Set(fileFindings.map(f => f.line));
+  const findingMap = new Map(fileFindings.map(f => [f.line, f]));
 
   const parsedLines = currentFile ? parseDiff(currentFile.patch) : [];
 
   return (
-    <div
-      className="rounded-lg overflow-hidden"
-      style={{
-        background: '#0d0d14',
-        border: '1px solid var(--color-border)',
-      }}
-    >
-      {/* File tabs */}
+    <div className="flex h-full w-full overflow-hidden">
+      {/* File Tree Sidebar (Left) */}
       <div
-        className="flex overflow-x-auto"
-        style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-surface)' }}
+        className="w-72 shrink-0 flex flex-col h-full border-r"
+        style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
       >
-        {files.map(file => (
-          <FileTab
-            key={file.filename}
-            file={file}
-            active={file.filename === activeFile}
-            onClick={() => setActiveFile(file.filename)}
-            hasFinding={findings.some(f => f.file === file.filename)}
-          />
-        ))}
+        <div className="px-4 py-3 text-[11px] font-bold text-slate-100 uppercase tracking-widest border-b" style={{ borderColor: 'var(--color-border)' }}>
+          Files Changed
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {files.map(file => (
+            <FileTab
+              key={file.filename}
+              file={file}
+              active={file.filename === activeFile}
+              onClick={() => setActiveFile(file.filename)}
+              hasFinding={findings.some(f => f.file === file.filename)}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* File header */}
+      {/* Code Diff Area (Right) */}
       <div
-        className="flex items-center gap-3 px-4 py-2"
-        style={{ borderBottom: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-elevated)' }}
+        className="flex-1 overflow-hidden flex flex-col h-full w-full"
+        style={{
+          background: '#0a0a10',
+        }}
       >
-        <GitBranch size={12} style={{ color: 'var(--color-text-muted)' }} />
-        <code className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>
-          {currentFile?.filename}
-        </code>
-        {currentFile && (
-          <div
-            className="ml-auto flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm"
-            style={{ background: `${LANGUAGE_COLORS[currentFile.language] ?? '#888'}20`, color: LANGUAGE_COLORS[currentFile.language] ?? '#888' }}
-          >
-            {currentFile.language}
-          </div>
-        )}
-        {fileFindings.length > 0 && (
-          <div
-            className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm"
-            style={{
-              background: 'var(--color-critical-muted)',
-              color: 'var(--color-critical)',
-              border: '1px solid var(--color-critical-border)',
-            }}
-          >
-            {fileFindings.length} finding{fileFindings.length > 1 ? 's' : ''}
-          </div>
-        )}
+        {/* Sticky File header */}
+        <div
+          className="flex items-center justify-between px-4 py-2 shrink-0"
+          style={{ borderBottom: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-elevated)' }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+          <FileCode2 size={14} className="text-indigo-400 shrink-0" />
+          <code className="text-[12px] font-mono truncate text-slate-100 font-semibold">
+            {currentFile?.filename}
+          </code>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {currentFile && (
+            <span
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded uppercase font-semibold"
+              style={{
+                background: `${LANGUAGE_COLORS[currentFile.language] ?? '#888'}20`,
+                color: LANGUAGE_COLORS[currentFile.language] ?? '#888',
+              }}
+            >
+              {currentFile.language}
+            </span>
+          )}
+          {fileFindings.length > 0 && (
+            <span
+              className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-sm"
+              style={{
+                background: 'var(--color-critical-muted)',
+                color: 'var(--color-critical)',
+                border: '1px solid var(--color-critical-border)',
+              }}
+            >
+              <AlertTriangle size={11} />
+              {fileFindings.length} issue{fileFindings.length > 1 ? 's' : ''} detected
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Diff content */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+      {/* Code diff container */}
+      <div ref={containerRef} className="overflow-x-auto overflow-y-auto flex-1 font-mono text-xs w-full">
+        <table className="w-full text-left" style={{ borderCollapse: 'collapse' }}>
           <tbody>
             {parsedLines.map((line, idx) => {
               if (line.type === 'header') {
@@ -146,7 +192,7 @@ export function DiffViewer({ files, findings }: DiffViewerProps) {
                   <tr key={idx}>
                     <td
                       colSpan={3}
-                      className="px-4 py-1.5 font-mono text-[10px]"
+                      className="px-4 py-1.5 font-mono text-[11px] font-semibold"
                       style={{ background: 'var(--color-bg-overlay)', color: 'var(--color-text-muted)' }}
                     >
                       {line.content}
@@ -155,115 +201,93 @@ export function DiffViewer({ files, findings }: DiffViewerProps) {
                 );
               }
 
-              const isHighlighted = line.newLineNum !== null && findingLines.has(line.newLineNum);
-              const lineFinding = isHighlighted
-                ? fileFindings.find(f => f.line === line.newLineNum)
-                : null;
+              const lineNum = line.newLineNum;
+              const findingOnLine = lineNum ? findingMap.get(lineNum) : undefined;
+              const isSelectedFindingLine = findingOnLine && findingOnLine.id === selectedFindingId;
 
               return (
-                <>
+                <React.Fragment key={idx}>
                   <tr
-                    key={idx}
-                    className={getLineClass(line.type)}
-                    style={{
-                      background: isHighlighted
-                        ? 'rgba(244, 63, 94, 0.08)'
-                        : line.type === 'add'
-                          ? 'rgba(16, 185, 129, 0.04)'
-                          : line.type === 'remove'
-                            ? 'rgba(244, 63, 94, 0.04)'
-                            : 'transparent',
+                    id={lineNum ? `diff-line-${currentFile?.filename}-${lineNum}` : undefined}
+                    className={`transition-colors cursor-pointer ${getLineClass(line.type)} ${
+                      isSelectedFindingLine ? 'bg-rose-950/40 ring-2 ring-rose-500 ring-inset' : findingOnLine ? 'bg-rose-950/20' : ''
+                    }`}
+                    onClick={() => {
+                      if (findingOnLine && onSelectFinding) {
+                        onSelectFinding(findingOnLine.id);
+                      }
                     }}
                   >
-                    {/* Old line number */}
+                    {/* Old line num */}
                     <td
-                      className="px-2 py-0.5 text-right w-10 select-none font-mono text-[10px] shrink-0"
-                      style={{
-                        color: 'var(--color-text-muted)',
-                        borderRight: '1px solid var(--color-border-subtle)',
-                        userSelect: 'none',
-                      }}
+                      className="w-12 text-right px-2 py-0.5 select-none font-mono text-[11px] opacity-40 shrink-0"
+                      style={{ color: 'var(--color-text-muted)' }}
                     >
                       {line.oldLineNum ?? ''}
                     </td>
-                    {/* New line number */}
+                    {/* New line num */}
                     <td
-                      className="px-2 py-0.5 text-right w-10 select-none font-mono text-[10px]"
-                      style={{
-                        color: 'var(--color-text-muted)',
-                        borderRight: '1px solid var(--color-border-subtle)',
-                        userSelect: 'none',
-                      }}
+                      className="w-12 text-right px-2 py-0.5 select-none font-mono text-[11px] opacity-40 shrink-0 border-r border-[var(--color-border-subtle)]"
+                      style={{ color: 'var(--color-text-muted)' }}
                     >
                       {line.newLineNum ?? ''}
                     </td>
-                    {/* Finding indicator */}
-                    <td
-                      className="w-4 text-center select-none"
-                      style={{ userSelect: 'none' }}
-                    >
-                      {isHighlighted && (
-                        <div
-                          className="w-1.5 h-1.5 rounded-full mx-auto"
-                          style={{ background: 'var(--color-critical)' }}
-                          title={lineFinding?.title}
-                        />
-                      )}
-                    </td>
                     {/* Code content */}
-                    <td className="px-3 py-0.5 w-full">
-                      <pre
-                        className="font-mono text-[11px] leading-5"
-                        style={{
-                          color: line.type === 'add'
-                            ? '#9ece6a'
-                            : line.type === 'remove'
-                              ? '#f7768e'
-                              : '#a9b1d6',
-                        }}
-                      >
-                        <span
-                          className="select-none mr-2 opacity-50"
-                          style={{ userSelect: 'none' }}
-                        >
-                          {getLinePrefix(line.type)}
-                        </span>
+                    <td className="px-4 py-0.5 whitespace-pre font-mono leading-relaxed relative">
+                      <span className="select-none opacity-50 mr-2 font-bold">{getLinePrefix(line.type)}</span>
+                      <span style={{ color: line.type === 'add' ? '#6ee7b7' : line.type === 'remove' ? '#fda4af' : 'var(--color-text-primary)' }}>
                         {line.content}
-                      </pre>
+                      </span>
                     </td>
                   </tr>
-                  {/* Inline finding callout */}
-                  {lineFinding && (
+
+                  {/* Inline Finding Annotation Banner */}
+                  {findingOnLine && (
                     <tr key={`finding-${idx}`}>
-                      <td colSpan={4} className="px-4 py-2">
+                      <td colSpan={3} className="px-4 py-2.5">
                         <div
-                          className="flex items-start gap-2 p-2 rounded-md text-xs"
+                          className={`rounded-md p-3.5 my-1 border shadow-xl transition-all cursor-pointer ${
+                            isSelectedFindingLine ? 'ring-2 ring-rose-500 shadow-rose-950/50' : ''
+                          }`}
                           style={{
-                            background: 'var(--color-critical-muted)',
-                            border: '1px solid var(--color-critical-border)',
+                            background: 'var(--color-bg-surface)',
+                            borderColor: `var(--color-${findingOnLine.severity})`,
                           }}
+                          onClick={() => onSelectFinding?.(findingOnLine.id)}
                         >
-                          <div
-                            className="w-1 h-4 rounded-full shrink-0 mt-0.5"
-                            style={{ background: 'var(--color-critical)' }}
-                          />
-                          <div>
-                            <span className="font-semibold" style={{ color: 'var(--color-critical)' }}>
-                              {lineFinding.severity.toUpperCase()}
-                            </span>
-                            <span className="ml-2" style={{ color: 'var(--color-text-secondary)' }}>
-                              {lineFinding.title}
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <SeverityBadge severity={findingOnLine.severity} size="sm" />
+                              <span className="font-sans font-bold text-xs text-slate-100">
+                                {findingOnLine.title}
+                              </span>
+                            </div>
+                            <span className="font-mono text-[10px] opacity-90 font-bold" style={{ color: `var(--color-${findingOnLine.severity})` }}>
+                              Line {findingOnLine.line} · {findingOnLine.confidence}% Confidence
                             </span>
                           </div>
+                          <p className="font-sans text-xs leading-relaxed mb-2 text-slate-300">
+                            {findingOnLine.explanation}
+                          </p>
+                          {findingOnLine.suggestedFix && (
+                            <div
+                              className="p-2.5 rounded bg-black/50 font-mono text-[11px] border border-slate-800"
+                              style={{ color: '#6ee7b7' }}
+                            >
+                              <div className="text-[9px] font-sans font-bold text-slate-400 uppercase mb-1">Suggested Fix:</div>
+                              {findingOnLine.suggestedFix}
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Command, Bell, ChevronDown, GitBranch, Orbit } from 'lucide-react';
+import { Search, Command, Bell, ChevronDown, GitBranch, Orbit, Check, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/stores/app';
 import { formatRelativeTime } from '@/lib/utils';
@@ -13,16 +13,16 @@ export function TopBar() {
 
   return (
     <header
-      className="h-14 flex items-center gap-3 px-4 shrink-0"
+      className="h-[52px] flex items-center justify-between gap-4 px-4 shrink-0 relative z-20"
       style={{
         borderBottom: '1px solid var(--color-border)',
         background: 'var(--color-bg-surface)',
       }}
     >
-      {/* Repo + PR selectors */}
-      <div className="flex items-center gap-2 mr-2">
+      {/* Left: Breadcrumbs / Quick Context Selectors */}
+      <div className="flex items-center gap-2">
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors hover:bg-white/5"
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-medium cursor-pointer transition-colors hover:bg-white/[0.03]"
           style={{
             background: 'var(--color-bg-elevated)',
             border: '1px solid var(--color-border)',
@@ -30,34 +30,34 @@ export function TopBar() {
           }}
           onClick={() => navigate('/repositories')}
         >
-          <GitBranch size={13} />
-          <span className="font-medium text-xs" style={{ color: 'var(--color-text-primary)' }}>
+          <GitBranch size={12} className="text-indigo-400 shrink-0" />
+          <span className="font-mono text-[12px]" style={{ color: 'var(--color-text-primary)' }}>
             payment-service
           </span>
-          <ChevronDown size={12} style={{ color: 'var(--color-text-muted)' }} />
+          <ChevronDown size={11} style={{ color: 'var(--color-text-muted)' }} />
         </div>
 
-        <span style={{ color: 'var(--color-text-muted)' }} className="text-xs">/</span>
+        <span style={{ color: 'var(--color-text-muted)' }} className="text-[11px] font-mono">/</span>
 
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors hover:bg-white/5"
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-medium cursor-pointer transition-colors hover:bg-white/[0.03]"
           style={{
             background: 'var(--color-bg-elevated)',
             border: '1px solid var(--color-border)',
           }}
           onClick={() => navigate('/pull-requests/pr-142')}
         >
-          <span className="font-mono text-xs" style={{ color: 'var(--color-accent)' }}>#142</span>
-          <span className="text-xs max-w-[180px] truncate" style={{ color: 'var(--color-text-secondary)' }}>
+          <span className="font-mono text-[12px] font-bold" style={{ color: 'var(--color-accent)' }}>#142</span>
+          <span className="text-[12px] max-w-[160px] truncate" style={{ color: 'var(--color-text-secondary)' }}>
             Add payment retry mechanism
           </span>
-          <ChevronDown size={12} style={{ color: 'var(--color-text-muted)' }} />
+          <ChevronDown size={11} style={{ color: 'var(--color-text-muted)' }} />
         </div>
       </div>
 
-      {/* Search */}
+      {/* Center: Global Search Bar */}
       <button
-        className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm flex-1 max-w-xs transition-colors hover:bg-white/5"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] flex-1 max-w-sm transition-all hover:border-[var(--color-border-strong)]"
         style={{
           background: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-border)',
@@ -65,46 +65,48 @@ export function TopBar() {
         }}
         onClick={() => setCommandPaletteOpen(true)}
       >
-        <Search size={13} />
-        <span className="text-xs flex-1 text-left">Search PRs, findings, files...</span>
+        <Search size={13} className="shrink-0" />
+        <span className="text-[12px] flex-1 text-left truncate">Search PRs, findings, repos…</span>
         <kbd
-          className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm"
+          className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded"
           style={{
             background: 'var(--color-bg-overlay)',
             border: '1px solid var(--color-border)',
+            color: 'var(--color-text-secondary)',
           }}
         >
           ⌘K
         </kbd>
       </button>
 
-      {/* Right side */}
-      <div className="ml-auto flex items-center gap-2">
-        {/* Command palette shortcut */}
+      {/* Right: Actions, Notifications & Profile */}
+      <div className="flex items-center gap-2">
+        {/* Quick Command Trigger */}
         <button
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors hover:bg-white/5"
+          className="hidden sm:flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] font-medium transition-colors hover:bg-white/[0.03]"
           style={{
             background: 'var(--color-bg-elevated)',
             border: '1px solid var(--color-border)',
             color: 'var(--color-text-muted)',
           }}
           onClick={() => setCommandPaletteOpen(true)}
+          title="Command Palette (Cmd+K)"
         >
           <Command size={12} />
-          <span>K</span>
         </button>
 
-        {/* Notifications */}
+        {/* Notifications Dropdown */}
         <div className="relative">
           <button
-            className="relative p-2 rounded-md transition-colors hover:bg-white/5"
+            className="relative p-1.5 rounded-md transition-colors hover:bg-white/[0.03]"
             style={{ color: 'var(--color-text-secondary)' }}
             onClick={() => setShowNotifications(!showNotifications)}
+            title="Notifications"
           >
             <Bell size={15} />
             {unreadCount > 0 && (
               <span
-                className="absolute top-1 right-1 w-2 h-2 rounded-full"
+                className="absolute top-1 right-1 w-2 h-2 rounded-full ring-2 ring-[var(--color-bg-surface)]"
                 style={{ background: 'var(--color-critical)' }}
               />
             )}
@@ -118,11 +120,11 @@ export function TopBar() {
                   onClick={() => setShowNotifications(false)}
                 />
                 <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-80 rounded-lg z-50 overflow-hidden"
+                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute right-0 top-full mt-1.5 w-84 rounded-xl z-50 overflow-hidden"
                   style={{
                     background: 'var(--color-bg-elevated)',
                     border: '1px solid var(--color-border-strong)',
@@ -130,28 +132,31 @@ export function TopBar() {
                   }}
                 >
                   <div
-                    className="flex items-center justify-between px-4 py-3"
+                    className="flex items-center justify-between px-4 py-2.5"
                     style={{ borderBottom: '1px solid var(--color-border)' }}
                   >
-                    <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                      Notifications
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <Bell size={13} className="text-indigo-400" />
+                      <span className="text-[12px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                        Security Alerts & Activity
+                      </span>
+                    </div>
                     {unreadCount > 0 && (
                       <button
-                        className="text-xs transition-colors hover:opacity-80"
+                        className="text-[11px] font-medium transition-colors hover:opacity-80 flex items-center gap-1"
                         style={{ color: 'var(--color-accent)' }}
                         onClick={markAllRead}
                       >
-                        Mark all read
+                        <Check size={11} />
+                        Mark read
                       </button>
                     )}
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border-subtle)]">
                     {notifications.map((n: import('@/types').Notification) => (
                       <div
                         key={n.id}
-                        className="px-4 py-3 cursor-pointer transition-colors hover:bg-white/3"
-                        style={{ borderBottom: '1px solid var(--color-border-subtle)' }}
+                        className="px-4 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.02]"
                         onClick={() => {
                           markRead(n.id);
                           if (n.pullRequestId) {
@@ -169,17 +174,17 @@ export function TopBar() {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-xs font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                              <span className="text-[12px] font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>
                                 {n.title}
                               </span>
                               {n.type === 'critical_finding' && (
                                 <SeverityBadge severity="critical" size="sm" />
                               )}
                             </div>
-                            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                               {n.message}
                             </p>
-                            <span className="text-[10px] mt-1 block" style={{ color: 'var(--color-text-muted)' }}>
+                            <span className="text-[10px] font-mono mt-1 block" style={{ color: 'var(--color-text-muted)' }}>
                               {formatRelativeTime(n.timestamp)}
                             </span>
                           </div>
@@ -193,20 +198,24 @@ export function TopBar() {
           </AnimatePresence>
         </div>
 
-        {/* User avatar */}
-        <div className="flex items-center gap-2.5 pl-2" style={{ borderLeft: '1px solid var(--color-border)' }}>
+        {/* User Profile Area */}
+        <div className="flex items-center gap-2 pl-2 ml-0.5" style={{ borderLeft: '1px solid var(--color-border)' }}>
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
             style={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
               color: 'white',
             }}
           >
-            <Orbit size={14} />
+            <Orbit size={12} />
           </div>
-          <div className="hidden md:block">
-            <div className="text-xs font-medium" style={{ color: 'var(--color-text-primary)' }}>Demo User</div>
-            <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>orbita-demo</div>
+          <div className="hidden lg:block text-left">
+            <div className="text-[12px] font-semibold leading-tight" style={{ color: 'var(--color-text-primary)' }}>
+              Engineering Lead
+            </div>
+            <div className="text-[10px] font-mono leading-tight" style={{ color: 'var(--color-text-muted)' }}>
+              orbita-demo
+            </div>
           </div>
         </div>
       </div>

@@ -1,186 +1,124 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { GitFork, Shield, Zap, Eye, Code2, Sliders, BookOpen, Plus, Trash2 } from 'lucide-react';
-
-interface ToggleProps {
-  label: string;
-  description: string;
-  defaultOn?: boolean;
-}
-
-function Toggle({ label, description, defaultOn = true }: ToggleProps) {
-  const [on, setOn] = useState(defaultOn);
-  return (
-    <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
-      <div>
-        <div className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{label}</div>
-        <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{description}</div>
-      </div>
-      <button
-        className="relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0"
-        style={{ background: on ? 'var(--color-accent)' : 'var(--color-bg-overlay)' }}
-        onClick={() => setOn(!on)}
-      >
-        <motion.div
-          animate={{ x: on ? 16 : 2 }}
-          transition={{ duration: 0.15 }}
-          className="absolute top-0.5 w-4 h-4 rounded-full"
-          style={{ background: 'white' }}
-        />
-      </button>
-    </div>
-  );
-}
-
-function SettingsSection({ icon: Icon, title, children }: {
-  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="rounded-lg overflow-hidden mb-4"
-      style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-    >
-      <div
-        className="flex items-center gap-2.5 px-5 py-3.5"
-        style={{ borderBottom: '1px solid var(--color-border)' }}
-      >
-        <Icon size={15} style={{ color: 'var(--color-accent)' }} />
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</h2>
-      </div>
-      <div className="px-5 py-2">{children}</div>
-    </div>
-  );
-}
+import { Cpu, ShieldCheck, Key, Bell, Check, Save } from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export function Settings() {
-  const [rules, setRules] = useState([
-    { id: '1', name: 'Payment Repository', content: 'Always check:\n- Currency conversion accuracy\n- Transaction idempotency\n- Authentication and authorization\n- Sensitive data logging', enabled: true },
-  ]);
-  const [newRule, setNewRule] = useState('');
-  const [threshold, setThreshold] = useState(2);
+  const [provider, setProvider] = useState<'gemini' | 'openai' | 'anthropic'>('gemini');
+  const [apiKey, setApiKey] = useState('AIzaSyDemoKeyProvidedBySettingsEngine123');
+  const [confidenceThreshold, setConfidenceThreshold] = useState(70);
+  const [saved, setSaved] = useState(false);
 
-  const thresholdLabels = ['Info', 'Low', 'Medium', 'High', 'Critical'];
-  const thresholdColors = ['var(--color-text-muted)', 'var(--color-low)', 'var(--color-medium)', 'var(--color-high)', 'var(--color-critical)'];
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Settings</h1>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Configure ORBITA for your workflow</p>
-      </div>
-
-      {/* GitHub */}
-      <SettingsSection icon={GitFork} title="GitHub">
-        <div className="py-3">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <div className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Connected Account</div>
-              <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>orbita-demo · 3 repositories</div>
-            </div>
-            <div
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
-              style={{ background: 'var(--color-pass-muted)', color: 'var(--color-pass)', border: '1px solid var(--color-pass-border)' }}
-            >
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-pass)' }} />
-              Connected
-            </div>
-          </div>
+    <div className="page-container max-w-[1100px] space-y-5">
+      <PageHeader
+        title="Settings & Configuration"
+        subtitle="Configure LLM providers, analysis confidence thresholds, and GitHub integrations"
+        actions={
           <button
-            className="text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-white/5"
-            style={{ color: 'var(--color-critical)', border: '1px solid var(--color-critical-border)' }}
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3.5 py-[7px] rounded-lg text-[12px] font-bold transition-all"
+            style={{
+              background: saved ? 'var(--color-pass)' : 'linear-gradient(135deg, #6366f1, #7c3aed)',
+              color: 'white',
+            }}
           >
-            Disconnect GitHub
+            {saved ? <Check size={13} /> : <Save size={13} />}
+            {saved ? 'Saved Changes' : 'Save Settings'}
           </button>
+        }
+      />
+
+      {/* AI Provider Section */}
+      <div className="surface-card p-4 space-y-4">
+        <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--color-border-subtle)]">
+          <Cpu size={15} className="text-indigo-400" />
+          <h2 className="text-[14px] font-bold text-slate-100">AI Intelligence Provider</h2>
         </div>
-      </SettingsSection>
 
-      {/* AI Review */}
-      <SettingsSection icon={Zap} title="AI Review">
-        <Toggle label="Security Analysis" description="Detect SQL injection, auth bypass, XSS, and other security vulnerabilities" defaultOn={true} />
-        <Toggle label="Performance Analysis" description="Identify N+1 queries, inefficient loops, and memory issues" defaultOn={true} />
-        <Toggle label="Correctness Analysis" description="Catch bugs, logic errors, and incorrect assumptions" defaultOn={true} />
-        <Toggle label="Architecture Analysis" description="Evaluate design patterns, coupling, and technical debt" defaultOn={false} />
-        <Toggle label="Style Analysis" description="Minor style and convention issues (low priority)" defaultOn={false} />
-      </SettingsSection>
-
-      {/* Severity threshold */}
-      <SettingsSection icon={Sliders} title="GitHub Comment Threshold">
-        <div className="py-3">
-          <p className="text-xs mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-            Only post GitHub inline comments for findings at or above this severity level.
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={0}
-              max={4}
-              value={threshold}
-              onChange={e => setThreshold(Number(e.target.value))}
-              className="flex-1"
-              style={{ accentColor: thresholdColors[threshold] }}
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { id: 'gemini', label: 'Google Gemini', desc: 'gemini-2.0-flash-exp (Default)' },
+            { id: 'openai', label: 'OpenAI', desc: 'gpt-4o' },
+            { id: 'anthropic', label: 'Anthropic', desc: 'claude-3-5-sonnet' },
+          ].map(item => (
             <div
-              className="text-xs font-semibold font-mono px-2.5 py-1 rounded-sm min-w-16 text-center"
-              style={{
-                color: thresholdColors[threshold],
-                background: `${thresholdColors[threshold]}15`,
-                border: `1px solid ${thresholdColors[threshold]}30`,
-              }}
+              key={item.id}
+              onClick={() => setProvider(item.id as any)}
+              className={`p-3.5 rounded-lg border cursor-pointer transition-all ${
+                provider === item.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]' : 'border-[var(--color-border)] hover:bg-white/[0.02]'
+              }`}
             >
-              {thresholdLabels[threshold]}
-            </div>
-          </div>
-        </div>
-      </SettingsSection>
-
-      {/* Custom rules */}
-      <SettingsSection icon={BookOpen} title="Repository Rules">
-        <div className="py-2 space-y-3">
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            Custom instructions that ORBITA incorporates into its analysis for specific repositories.
-          </p>
-          {rules.map(rule => (
-            <div
-              key={rule.id}
-              className="rounded-md overflow-hidden"
-              style={{ border: '1px solid var(--color-border)' }}
-            >
-              <div
-                className="flex items-center justify-between px-3 py-2"
-                style={{ background: 'var(--color-bg-elevated)', borderBottom: '1px solid var(--color-border)' }}
-              >
-                <span className="text-xs font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  {rule.name}
-                </span>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: rule.enabled ? 'var(--color-pass)' : 'var(--color-text-muted)' }}
-                  />
-                  <button onClick={() => setRules(r => r.filter(x => x.id !== rule.id))} style={{ color: 'var(--color-text-muted)' }}>
-                    <Trash2 size={12} />
-                  </button>
-                </div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-[13px] text-slate-200">{item.label}</span>
+                {provider === item.id && <Check size={14} className="text-indigo-400" />}
               </div>
-              <pre
-                className="p-3 text-xs font-mono leading-relaxed"
-                style={{ color: 'var(--color-text-secondary)', background: 'var(--color-bg-overlay)' }}
-              >
-                {rule.content}
-              </pre>
+              <span className="text-[11px] text-[var(--color-text-muted)] font-mono">{item.desc}</span>
             </div>
           ))}
-          <button
-            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md w-full transition-colors hover:bg-white/5"
-            style={{ color: 'var(--color-accent)', border: '1px dashed var(--color-accent-border)' }}
-          >
-            <Plus size={12} />
-            Add custom rule
-          </button>
         </div>
-      </SettingsSection>
+
+        <div className="space-y-1.5 pt-1">
+          <label className="text-[12px] font-semibold text-[var(--color-text-secondary)]">API Key</label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            className="w-full px-3 py-[6px] rounded-lg text-[12px] font-mono focus:outline-none"
+            style={{
+              background: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Confidence Thresholds */}
+      <div className="surface-card p-4 space-y-4">
+        <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--color-border-subtle)]">
+          <ShieldCheck size={15} className="text-indigo-400" />
+          <h2 className="text-[14px] font-bold text-slate-100">Analysis Thresholds</h2>
+        </div>
+
+        <div className="space-y-2.5">
+          <div className="flex justify-between text-[12px] font-mono">
+            <span className="text-[var(--color-text-secondary)] font-sans">Minimum Finding Confidence</span>
+            <span className="font-bold text-indigo-400">{confidenceThreshold}%</span>
+          </div>
+          <input
+            type="range"
+            min="50"
+            max="95"
+            value={confidenceThreshold}
+            onChange={e => setConfidenceThreshold(Number(e.target.value))}
+            className="w-full cursor-pointer"
+          />
+          <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+            Findings with confidence scores below {confidenceThreshold}% will be marked as informational observations rather than flagged issues.
+          </p>
+        </div>
+      </div>
+
+      {/* GitHub Integration */}
+      <div className="surface-card p-4 space-y-2.5">
+        <div className="flex items-center justify-between pb-2.5 border-b border-[var(--color-border-subtle)]">
+          <div className="flex items-center gap-2">
+            <Key size={15} className="text-indigo-400" />
+            <h2 className="text-[14px] font-bold text-slate-100">GitHub Webhook Integration</h2>
+          </div>
+          <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/30 px-2 py-0.5 rounded-md">
+            CONNECTED
+          </span>
+        </div>
+        <p className="text-[12px] text-[var(--color-text-secondary)]">
+          Webhook endpoint: <code className="font-mono text-indigo-300">http://localhost:8000/webhooks/github</code>
+        </p>
+      </div>
     </div>
   );
 }

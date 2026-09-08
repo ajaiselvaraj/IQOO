@@ -1,242 +1,159 @@
-import { motion } from 'framer-motion';
+import { BarChart3, TrendingUp, ShieldAlert, CheckCircle, Clock, FileCode2, Cpu } from 'lucide-react';
 import { DEMO_ANALYTICS } from '@/data/demo';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { MetricCard } from '@/components/ui/MetricCard';
 import { SeverityBadge } from '@/components/ui/Badge';
 
-const CATEGORY_COLORS: Record<string, string> = {
-  security: 'var(--color-critical)',
-  correctness: 'var(--color-high)',
-  performance: 'var(--color-medium)',
-  maintainability: 'var(--color-pass)',
-  style: 'var(--color-low)',
-  architecture: 'var(--color-accent)',
-};
-
-function MiniSparkline({ data }: { data: { avgScore: number }[] }) {
-  const max = Math.max(...data.map(d => d.avgScore));
-  const width = 120;
-  const height = 36;
-  const points = data.map((d, i) => ({
-    x: (i / (data.length - 1)) * width,
-    y: height - (d.avgScore / max) * height,
-  }));
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <path d={path} fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" />
-      {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="2" fill="var(--color-accent)" />
-      ))}
-    </svg>
-  );
-}
-
 export function Analytics() {
-  const { issueDistribution, highRiskFiles, reviewEfficiency, commonPatterns, riskTrend } = DEMO_ANALYTICS;
-  const totalIssues = issueDistribution.reduce((s, d) => s + d.count, 0);
+  const { reviewEfficiency, commonPatterns, riskTrend, highRiskFiles } = DEMO_ANALYTICS;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            Analytics
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-            Engineering intelligence — last 14 days · Demo data
-          </p>
-        </div>
-        <span
-          className="text-[10px] font-semibold px-2 py-1 rounded-sm font-mono"
-          style={{
-            background: 'rgba(99,102,241,0.1)',
-            border: '1px solid rgba(99,102,241,0.3)',
-            color: 'var(--color-accent)',
-          }}
-        >
-          DEMO DATA
-        </span>
+    <div className="page-container space-y-5">
+      <PageHeader
+        title="Analytics & Security Intelligence"
+        subtitle="Engineering risk trends, vulnerability distributions, high-risk files, and AI pipeline velocity"
+      />
+
+      {/* Top KPI Metric Cards (4 Cards) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          label="PRs Analyzed"
+          value={reviewEfficiency.prAnalyzed}
+          color="var(--color-accent)"
+          icon={BarChart3}
+          sub="Across connected repos"
+        />
+        <MetricCard
+          label="Findings Detected"
+          value={reviewEfficiency.findingsDetected}
+          color="var(--color-high)"
+          icon={ShieldAlert}
+          sub="Vulnerabilities & bugs"
+        />
+        <MetricCard
+          label="Findings Remediated"
+          value={reviewEfficiency.findingsFixed}
+          color="var(--color-pass)"
+          icon={CheckCircle}
+          sub="Fixed by engineers"
+        />
+        <MetricCard
+          label="Avg Pipeline Speed"
+          value={reviewEfficiency.avgAnalysisTime}
+          color="var(--color-low)"
+          icon={Clock}
+          sub="Seconds per PR review"
+        />
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'PRs Analyzed', value: reviewEfficiency.prAnalyzed, sub: 'total', color: 'var(--color-accent)' },
-          { label: 'Findings Detected', value: reviewEfficiency.findingsDetected, sub: 'total', color: 'var(--color-high)' },
-          { label: 'Findings Fixed', value: reviewEfficiency.findingsFixed, sub: `${Math.round((reviewEfficiency.findingsFixed / reviewEfficiency.findingsDetected) * 100)}% fix rate`, color: 'var(--color-pass)' },
-          { label: 'Avg. Analysis', value: reviewEfficiency.avgAnalysisTime, sub: 'seconds', color: 'var(--color-medium)' },
-        ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
-            className="rounded-lg p-4"
-            style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-          >
-            <div className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>{stat.label}</div>
-            <div className="text-2xl font-bold font-mono" style={{ color: stat.color }}>
-              {stat.value}
+      {/* Main Charts Row — Left 65% / Right 35% */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* Left ~65%: PR Risk Over Time */}
+        <div className="col-span-12 lg:col-span-8 surface-card p-4 space-y-3.5">
+          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--color-border-subtle)]">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={15} className="text-indigo-400" />
+              <h3 className="section-title">PR Security Risk Trend (Last 5 Weeks)</h3>
             </div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{stat.sub}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {/* Risk trend */}
-        <div
-          className="col-span-2 rounded-lg p-4"
-          style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold tracking-wider uppercase" style={{ color: 'var(--color-text-muted)' }}>
-              PR Risk Over Time
-            </h2>
-            <MiniSparkline data={riskTrend} />
+            <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-800/30 px-2 py-0.5 rounded-md">
+              Risk Score Improved -18%
+            </span>
           </div>
-          <div className="space-y-2">
-            {riskTrend.slice(-5).map((point, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-[10px] font-mono w-20 shrink-0" style={{ color: 'var(--color-text-muted)' }}>
-                  {point.date}
-                </span>
-                <div className="flex-1 flex items-center gap-1 h-3">
-                  {[
-                    { val: point.critical, color: 'var(--color-critical)' },
-                    { val: point.high, color: 'var(--color-high)' },
-                    { val: point.medium, color: 'var(--color-medium)' },
-                    { val: point.low, color: 'var(--color-low)' },
-                  ].filter(b => b.val > 0).map((band, j) => (
-                    <motion.div
-                      key={j}
-                      className="h-2 rounded-sm"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${band.val * 20}px` }}
-                      transition={{ duration: 0.6, delay: i * 0.1 }}
-                      style={{ background: band.color, minWidth: 4 }}
-                    />
-                  ))}
+
+          <div className="space-y-3 pt-0.5">
+            {riskTrend.map(item => (
+              <div key={item.date} className="space-y-1.5">
+                <div className="flex items-center justify-between text-[12px] font-mono">
+                  <span className="text-slate-300 font-semibold">{item.date}</span>
+                  <span className="text-rose-400 font-semibold">{item.critical} Critical · {item.high} High · {item.medium} Medium</span>
                 </div>
-                <span
-                  className="text-[10px] font-mono font-semibold w-8 text-right"
-                  style={{ color: point.avgScore >= 60 ? 'var(--color-high)' : 'var(--color-pass)' }}
-                >
-                  {point.avgScore}
-                </span>
+                <div className="w-full h-2 rounded-full bg-[var(--color-bg-elevated)] overflow-hidden flex">
+                  <div className="h-full bg-rose-500 transition-all" style={{ width: `${item.critical * 15}%` }} />
+                  <div className="h-full bg-orange-500 transition-all" style={{ width: `${item.high * 12}%` }} />
+                  <div className="h-full bg-amber-500 transition-all" style={{ width: `${item.medium * 8}%` }} />
+                  <div className="h-full bg-blue-500 transition-all" style={{ width: `${item.low * 5}%` }} />
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Issue distribution */}
-        <div
-          className="rounded-lg p-4"
-          style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-        >
-          <h2 className="text-xs font-semibold tracking-wider uppercase mb-4" style={{ color: 'var(--color-text-muted)' }}>
-            Issue Distribution
-          </h2>
-          <div className="space-y-3">
-            {issueDistribution.map((item, i) => (
-              <div key={item.category}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs capitalize" style={{ color: 'var(--color-text-secondary)' }}>
-                    {item.category}
+        {/* Right ~35%: Vulnerability Category Distribution */}
+        <div className="col-span-12 lg:col-span-4 surface-card p-4 space-y-3.5">
+          <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--color-border-subtle)]">
+            <ShieldAlert size={15} className="text-indigo-400" />
+            <h3 className="section-title">Vulnerability Category Ratio</h3>
+          </div>
+
+          <div className="space-y-2.5">
+            {[
+              { label: 'Security & Auth Bypass', pct: 45, count: 105, color: 'var(--color-critical)' },
+              { label: 'Bugs & Logic Errors', pct: 28, count: 65, color: 'var(--color-high)' },
+              { label: 'Performance & N+1 Queries', pct: 17, count: 40, color: 'var(--color-medium)' },
+              { label: 'Maintainability & Debt', pct: 10, count: 24, color: 'var(--color-low)' },
+            ].map(cat => (
+              <div key={cat.label} className="space-y-1.5 p-2.5 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)]">
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="font-semibold text-slate-200">{cat.label}</span>
+                  <span className="font-mono text-[12px] font-bold" style={{ color: cat.color }}>
+                    {cat.count} ({cat.pct}%)
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>
-                      {item.count}
-                    </span>
-                    <span className="text-[10px] font-mono" style={{ color: CATEGORY_COLORS[item.category] }}>
-                      {item.percentage}%
-                    </span>
-                  </div>
                 </div>
-                <div className="h-1.5 rounded-full" style={{ background: 'var(--color-bg-overlay)' }}>
-                  <motion.div
-                    className="h-full rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${item.percentage}%` }}
-                    transition={{ duration: 0.7, delay: i * 0.08 }}
-                    style={{ background: CATEGORY_COLORS[item.category] }}
+                <div className="w-full h-1 rounded-full bg-[var(--color-bg-overlay)] overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${cat.pct}%`, background: cat.color }}
                   />
                 </div>
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* High-risk files */}
-        <div
-          className="col-span-2 rounded-lg overflow-hidden"
-          style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-        >
-          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
-            <h2 className="text-xs font-semibold tracking-wider uppercase" style={{ color: 'var(--color-text-muted)' }}>
-              High-Risk Files
-            </h2>
+      {/* Lower Row — 50% / 50% */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* High-Risk Files */}
+        <div className="col-span-12 lg:col-span-6 surface-card p-4 space-y-3.5">
+          <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--color-border-subtle)]">
+            <FileCode2 size={15} className="text-indigo-400" />
+            <h3 className="section-title">High-Risk Files & Hotspots</h3>
           </div>
-          <div>
-            {DEMO_ANALYTICS.highRiskFiles.map((file, i) => (
-              <motion.div
+
+          <div className="space-y-2">
+            {highRiskFiles.map(file => (
+              <div
                 key={file.filename}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="flex items-center gap-4 px-4 py-2.5"
-                style={{ borderBottom: i < DEMO_ANALYTICS.highRiskFiles.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
+                className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)] text-[12px] font-mono"
               >
-                <div className="flex-1 min-w-0">
-                  <code className="text-xs font-mono truncate block" style={{ color: 'var(--color-text-primary)' }}>
-                    {file.filename}
-                  </code>
-                  <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                    {file.repository}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-xs shrink-0">
-                  {file.criticalCount > 0 && (
-                    <SeverityBadge severity="critical" size="sm" />
-                  )}
-                  <span style={{ color: 'var(--color-text-secondary)' }}>
-                    {file.findingsCount} findings
-                  </span>
-                  <div className="w-16 h-1 rounded-full" style={{ background: 'var(--color-bg-overlay)' }}>
-                    <motion.div
-                      className="h-full rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((file.findingsCount / 12) * 100, 100)}%` }}
-                      transition={{ duration: 0.6, delay: i * 0.08 }}
-                      style={{ background: file.criticalCount > 0 ? 'var(--color-critical)' : 'var(--color-high)' }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
+              <div>
+                <div className="font-semibold text-slate-100">{file.filename}</div>
+                <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{file.repository}</div>
+              </div>
+              <div className="text-right">
+                <span className="text-rose-400 font-bold">{file.criticalCount} Critical</span>
+                <span className="text-[var(--color-text-muted)] block text-[10px]">{file.findingsCount} total issues</span>
+              </div>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Common patterns */}
-        <div
-          className="rounded-lg p-4"
-          style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)' }}
-        >
-          <h2 className="text-xs font-semibold tracking-wider uppercase mb-3" style={{ color: 'var(--color-text-muted)' }}>
-            Recurring Patterns
-          </h2>
-          <div className="space-y-3">
-            {commonPatterns.map((pattern, i) => (
-              <div key={i} className="flex items-start gap-2.5">
-                <SeverityBadge severity={pattern.severity} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs leading-tight" style={{ color: 'var(--color-text-secondary)' }}>
-                    {pattern.pattern}
-                  </div>
-                  <div className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                    {pattern.count}× detected
-                  </div>
+        {/* Recurring Vulnerability Patterns */}
+        <div className="col-span-12 lg:col-span-6 surface-card p-4 space-y-3.5">
+          <div className="flex items-center gap-2 pb-2.5 border-b border-[var(--color-border-subtle)]">
+            <Cpu size={15} className="text-indigo-400" />
+            <h3 className="section-title">Recurring Vulnerability Patterns</h3>
+          </div>
+
+          <div className="space-y-2">
+            {commonPatterns.map(p => (
+              <div key={p.pattern} className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)]">
+                <div className="flex items-center gap-2.5">
+                  <SeverityBadge severity={p.severity} size="sm" />
+                  <span className="font-semibold text-[13px] text-slate-100">{p.pattern}</span>
                 </div>
+                <span className="font-mono text-[12px] font-bold text-indigo-400">{p.count}× occurrences</span>
               </div>
             ))}
           </div>

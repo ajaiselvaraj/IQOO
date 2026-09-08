@@ -3,7 +3,7 @@ import type { Severity } from '@/types';
 
 interface BadgeProps {
   severity: Severity;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
@@ -19,9 +19,9 @@ export function SeverityBadge({ severity, size = 'md', className }: BadgeProps) 
   return (
     <span
       className={cn(
-        'inline-flex items-center font-mono font-semibold rounded-sm tracking-wider',
+        'inline-flex items-center font-mono font-bold rounded tracking-wider uppercase shrink-0 whitespace-nowrap',
         `severity-${severity}`,
-        size === 'sm' ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1',
+        size === 'sm' ? 'text-[10px] px-2 py-0.5' : size === 'lg' ? 'text-xs px-3 py-1' : 'text-[11px] px-2.5 py-0.5',
         className
       )}
     >
@@ -38,7 +38,7 @@ interface RiskBadgeProps {
 }
 
 const riskLabels: Record<string, string> = {
-  critical: 'CRITICAL',
+  critical: 'CRITICAL RISK',
   high: 'HIGH RISK',
   medium: 'MEDIUM RISK',
   low: 'LOW RISK',
@@ -49,14 +49,14 @@ export function RiskBadge({ level, score, size = 'md', className }: RiskBadgePro
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-mono font-semibold rounded-sm tracking-wider',
+        'inline-flex items-center gap-1.5 font-mono font-bold rounded tracking-wider uppercase shrink-0 whitespace-nowrap',
         `severity-${level === 'passed' ? 'info' : level}`,
-        size === 'sm' ? 'text-[9px] px-1.5 py-0.5' : size === 'lg' ? 'text-xs px-3 py-1.5' : 'text-[10px] px-2 py-1',
+        size === 'sm' ? 'text-[10px] px-2 py-0.5' : size === 'lg' ? 'text-xs px-3 py-1' : 'text-[11px] px-2.5 py-0.5',
         level === 'passed' && 'bg-[var(--color-pass-muted)] text-[var(--color-pass)] border-[var(--color-pass-border)]',
         className
       )}
     >
-      {score !== undefined && <span className="opacity-70">{score}</span>}
+      {score !== undefined && <span className="opacity-90 font-mono font-bold">{score}</span>}
       {riskLabels[level]}
     </span>
   );
@@ -80,7 +80,7 @@ export function StatusDot({ status, className }: StatusDotProps) {
   return (
     <span
       className={cn(
-        'inline-block w-1.5 h-1.5 rounded-full',
+        'inline-block w-2.5 h-2.5 rounded-full shrink-0',
         statusColors[status] ?? 'bg-[var(--color-text-muted)]',
         className
       )}
